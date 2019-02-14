@@ -12,7 +12,7 @@ in a easy and minimal way.
 ### Source
 
 ```#!bash
-$ go install github.com/prologic/todo/...
+$ go get github.com/prologic/todo
 ```
 
 ## Usage
