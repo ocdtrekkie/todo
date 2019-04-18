@@ -7,7 +7,11 @@
 todo is a self-hosted todo web app that lets you keep track of your todos
 in a easy and minimal way.
 
+## Demo
+
 ![screenshot](screenshot.png)
+
+There is also a public demo instance avilable at: https://todo.mills.io/
 
 ## Installation
 
