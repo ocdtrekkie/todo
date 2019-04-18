@@ -1,0 +1,10 @@
+version: '2'
+services:
+  todo:
+    build: .
+    image: todo:local
+    #image: prologic/todo:latest
+    ports:
+      - 8000:8000
+    container_name: todo
+    restart: always
