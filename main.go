@@ -3,12 +3,12 @@ package main
 import (
 	"log"
 
-	"github.com/asdine/storm"
 	"github.com/namsral/flag"
+	"github.com/prologic/bitcask"
 )
 
 var (
-	db *storm.DB
+	db *bitcask.Bitcask
 )
 
 func main() {
@@ -22,7 +22,7 @@ func main() {
 	flag.Parse()
 
 	var err error
-	db, err = storm.Open(dbpath)
+	db, err = bitcask.Open(dbpath)
 	if err != nil {
 		log.Fatal(err)
 	}
