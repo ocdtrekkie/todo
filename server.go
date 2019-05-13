@@ -1,23 +1,23 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"html/template"
-	"log"
 	"net/http"
+	"sort"
 	"strconv"
-
-	// Logging
-	"github.com/unrolled/logger"
-
-	// Stats/Metrics
-	"github.com/rcrowley/go-metrics"
-	"github.com/rcrowley/go-metrics/exp"
-	"github.com/thoas/stats"
 
 	"github.com/GeertJohan/go.rice"
 	"github.com/NYTimes/gziphandler"
 	"github.com/julienschmidt/httprouter"
+	"github.com/prologic/bitcask"
+	"github.com/rcrowley/go-metrics"
+	"github.com/rcrowley/go-metrics/exp"
+	log "github.com/sirupsen/logrus"
+	"github.com/thoas/stats"
+	"github.com/unrolled/logger"
 )
 
 // Counters ...
@@ -65,11 +65,13 @@ type Server struct {
 func (s *Server) render(name string, w http.ResponseWriter, ctx interface{}) {
 	buf, err := s.templates.Exec(name, ctx)
 	if err != nil {
+		log.WithError(err).Error("error rending template")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
 	_, err = buf.WriteTo(w)
 	if err != nil {
+		log.WithError(err).Error("error writing response")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }
@@ -83,14 +85,35 @@ func (s *Server) IndexHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		s.counters.Inc("n_index")
 
-		var todoList []*Todo
-		query := db.Select().Reverse().OrderBy("Done")
-		err := query.Find(&todoList)
-		if err != nil && err.Error() != "not found" {
-			log.Printf("error fetching todos: %s", err)
+		var todoList TodoList
+
+		err := db.Fold(func(key string) error {
+			if key == "nextid" {
+				return nil
+			}
+
+			var todo Todo
+
+			data, err := db.Get(key)
+			if err != nil {
+				log.WithError(err).WithField("key", key).Error("error getting todo")
+				return err
+			}
+
+			err = json.Unmarshal(data, &todo)
+			if err != nil {
+				return err
+			}
+			todoList = append(todoList, &todo)
+			return nil
+		})
+		if err != nil {
+			log.WithError(err).Error("error listing todos")
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		sort.Sort(todoList)
 
 		ctx := &TemplateContext{
 			TodoList: todoList,
@@ -105,9 +128,43 @@ func (s *Server) AddHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		s.counters.Inc("n_add")
 
-		todo := NewTodo(r.FormValue("title"))
-		err := db.Save(todo)
+		var nextID uint64
+		rawNextID, err := db.Get("nextid")
 		if err != nil {
+			if err != bitcask.ErrKeyNotFound {
+				log.WithError(err).Error("error getting nextid")
+				http.Error(w, "Internal Error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			nextID = binary.BigEndian.Uint64(rawNextID)
+		}
+
+		todo := NewTodo(r.FormValue("title"))
+		todo.ID = nextID
+
+		data, err := json.Marshal(&todo)
+		if err != nil {
+			log.WithError(err).Error("error serializing todo")
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+
+		key := fmt.Sprintf("todo_%d", nextID)
+
+		err = db.Put(key, data)
+		if err != nil {
+			log.WithError(err).Error("error storing todo")
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+
+		buf := make([]byte, 8)
+		nextID++
+		binary.BigEndian.PutUint64(buf, nextID)
+		err = db.Put("nextid", buf)
+		if err != nil {
+			log.WithError(err).Error("error storing nextid")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
@@ -129,30 +186,47 @@ func (s *Server) DoneHandler() httprouter.Handle {
 		}
 
 		if id == "" {
-			log.Printf("no id specified to mark as done: %s", id)
+			log.WithField("id", id).Warn("no id specified to mark as done")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
 
 		i, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
-			log.Printf("error parsing id %s: %s", id, err)
+			log.WithError(err).Error("error parsing id")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
 
 		var todo Todo
-		err = db.One("ID", i, &todo)
+
+		key := fmt.Sprintf("todo_%d", i)
+		data, err := db.Get(key)
 		if err != nil {
-			log.Printf("error looking up todo %d: %s", i, err)
+			log.WithError(err).WithField("key", key).Error("error retriving todo")
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+
+		err = json.Unmarshal(data, &todo)
+		if err != nil {
+			log.WithError(err).WithField("key", key).Error("error unmarshaling todo")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
 
 		todo.ToggleDone()
-		err = db.Save(&todo)
+
+		data, err = json.Marshal(&todo)
 		if err != nil {
-			log.Printf("error saving changes to todo %d: %s", i, err)
+			log.WithError(err).WithField("key", key).Error("error marshaling todo")
+			http.Error(w, "Internal Error", http.StatusInternalServerError)
+			return
+		}
+
+		err = db.Put(key, data)
+		if err != nil {
+			log.WithError(err).WithField("key", key).Error("error storing todo")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
@@ -174,29 +248,22 @@ func (s *Server) ClearHandler() httprouter.Handle {
 		}
 
 		if id == "" {
-			log.Printf("no id specified to mark as done: %s", id)
+			log.WithField("id", id).Warn("no id specified to mark as done")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
 
 		i, err := strconv.ParseInt(id, 10, 64)
 		if err != nil {
-			log.Printf("error parsing id %s: %s", id, err)
+			log.WithError(err).Error("error parsing id")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
 
-		var todo Todo
-		err = db.One("ID", i, &todo)
+		key := fmt.Sprintf("todo_%d", i)
+		err = db.Delete(key)
 		if err != nil {
-			log.Printf("error looking up todo %d: %s", i, err)
-			http.Error(w, "Internal Error", http.StatusInternalServerError)
-			return
-		}
-
-		err = db.DeleteStruct(&todo)
-		if err != nil {
-			log.Printf("error deleting todo %d: %s", i, err)
+			log.WithError(err).WithField("key", key).Error("error deleting todo")
 			http.Error(w, "Internal Error", http.StatusInternalServerError)
 			return
 		}
@@ -258,7 +325,6 @@ func NewServer(bind string) *Server {
 		logger: logger.New(logger.Options{
 			Prefix:               "todo",
 			RemoteAddressHeaders: []string{"X-Forwarded-For"},
-			OutputFlags:          log.LstdFlags,
 		}),
 
 		// Stats/Metrics

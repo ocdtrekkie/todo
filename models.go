@@ -6,11 +6,11 @@ import (
 
 // Todo ...
 type Todo struct {
-	ID        int       `storm:"id,increment"`
-	Done      bool      `storm:"index"`
-	Title     string    `storm:"index"`
-	CreatedAt time.Time `storm:"index"`
-	UpdatedAt time.Time `storm:"index"`
+	ID        uint64
+	Done      bool
+	Title     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 func NewTodo(title string) *Todo {
@@ -30,3 +30,10 @@ func (t *Todo) ToggleDone() {
 	t.Done = !t.Done
 	t.UpdatedAt = time.Now()
 }
+
+// TodoList ...
+type TodoList []*Todo
+
+func (a TodoList) Len() int           { return len(a) }
+func (a TodoList) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a TodoList) Less(i, j int) bool { return a[i].ID < a[j].ID }
