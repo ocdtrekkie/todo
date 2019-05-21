@@ -13,7 +13,7 @@ type Todo struct {
 	UpdatedAt time.Time
 }
 
-func NewTodo(title string) *Todo {
+func newTodo(title string) *Todo {
 	return &Todo{
 		Title:     title,
 		CreatedAt: time.Now(),
@@ -21,12 +21,12 @@ func NewTodo(title string) *Todo {
 	}
 }
 
-func (t *Todo) SetTitle(title string) {
+func (t *Todo) setTitle(title string) {
 	t.Title = title
 	t.UpdatedAt = time.Now()
 }
 
-func (t *Todo) ToggleDone() {
+func (t *Todo) toggleDone() {
 	t.Done = !t.Done
 	t.UpdatedAt = time.Now()
 }

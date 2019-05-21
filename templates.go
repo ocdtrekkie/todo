@@ -9,30 +9,30 @@ import (
 	"sync"
 )
 
-type TemplateMap map[string]*template.Template
+type templateMap map[string]*template.Template
 
-type Templates struct {
+type templates struct {
 	sync.Mutex
 
 	base      string
-	templates TemplateMap
+	templates templateMap
 }
 
-func NewTemplates(base string) *Templates {
-	return &Templates{
+func newTemplates(base string) *templates {
+	return &templates{
 		base:      base,
-		templates: make(TemplateMap),
+		templates: make(templateMap),
 	}
 }
 
-func (t *Templates) Add(name string, template *template.Template) {
+func (t *templates) Add(name string, template *template.Template) {
 	t.Lock()
 	defer t.Unlock()
 
 	t.templates[name] = template
 }
 
-func (t *Templates) Exec(name string, ctx interface{}) (io.WriterTo, error) {
+func (t *templates) Exec(name string, ctx interface{}) (io.WriterTo, error) {
 	t.Lock()
 	defer t.Unlock()
 

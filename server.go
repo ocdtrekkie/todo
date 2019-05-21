@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strconv"
 
-	"github.com/GeertJohan/go.rice"
+	rice "github.com/GeertJohan/go.rice"
 	"github.com/NYTimes/gziphandler"
 	"github.com/julienschmidt/httprouter"
 	"github.com/prologic/bitcask"
@@ -21,44 +21,44 @@ import (
 )
 
 // Counters ...
-type Counters struct {
+type counters struct {
 	r metrics.Registry
 }
 
-func NewCounters() *Counters {
-	counters := &Counters{
+func newCounters() *counters {
+	counters := &counters{
 		r: metrics.NewRegistry(),
 	}
 	return counters
 }
 
-func (c *Counters) Inc(name string) {
+func (c *counters) Inc(name string) {
 	metrics.GetOrRegisterCounter(name, c.r).Inc(1)
 }
 
-func (c *Counters) Dec(name string) {
+func (c *counters) Dec(name string) {
 	metrics.GetOrRegisterCounter(name, c.r).Dec(1)
 }
 
-func (c *Counters) IncBy(name string, n int64) {
+func (c *counters) IncBy(name string, n int64) {
 	metrics.GetOrRegisterCounter(name, c.r).Inc(n)
 }
 
-func (c *Counters) DecBy(name string, n int64) {
+func (c *counters) DecBy(name string, n int64) {
 	metrics.GetOrRegisterCounter(name, c.r).Dec(n)
 }
 
 // Server ...
 type Server struct {
 	bind      string
-	templates *Templates
+	templates *templates
 	router    *httprouter.Router
 
 	// Logger
 	logger *logger.Logger
 
 	// Stats/Metrics
-	counters *Counters
+	counters *counters
 	stats    *stats.Stats
 }
 
@@ -76,7 +76,7 @@ func (s *Server) render(name string, w http.ResponseWriter, ctx interface{}) {
 	}
 }
 
-type TemplateContext struct {
+type templateContext struct {
 	TodoList []*Todo
 }
 
@@ -115,7 +115,7 @@ func (s *Server) IndexHandler() httprouter.Handle {
 
 		sort.Sort(todoList)
 
-		ctx := &TemplateContext{
+		ctx := &templateContext{
 			TodoList: todoList,
 		}
 
@@ -140,7 +140,7 @@ func (s *Server) AddHandler() httprouter.Handle {
 			nextID = binary.BigEndian.Uint64(rawNextID)
 		}
 
-		todo := NewTodo(r.FormValue("title"))
+		todo := newTodo(r.FormValue("title"))
 		todo.ID = nextID
 
 		data, err := json.Marshal(&todo)
@@ -215,7 +215,7 @@ func (s *Server) DoneHandler() httprouter.Handle {
 			return
 		}
 
-		todo.ToggleDone()
+		todo.toggleDone()
 
 		data, err = json.Marshal(&todo)
 		if err != nil {
@@ -319,7 +319,7 @@ func NewServer(bind string) *Server {
 	server := &Server{
 		bind:      bind,
 		router:    httprouter.New(),
-		templates: NewTemplates("base"),
+		templates: newTemplates("base"),
 
 		// Logger
 		logger: logger.New(logger.Options{
@@ -328,7 +328,7 @@ func NewServer(bind string) *Server {
 		}),
 
 		// Stats/Metrics
-		counters: NewCounters(),
+		counters: newCounters(),
 		stats:    stats.New(),
 	}
 
