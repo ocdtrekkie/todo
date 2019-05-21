@@ -20,7 +20,6 @@ import (
 	"github.com/unrolled/logger"
 )
 
-// Counters ...
 type counters struct {
 	r metrics.Registry
 }
@@ -48,8 +47,7 @@ func (c *counters) DecBy(name string, n int64) {
 	metrics.GetOrRegisterCounter(name, c.r).Dec(n)
 }
 
-// Server ...
-type Server struct {
+type server struct {
 	bind      string
 	templates *templates
 	router    *httprouter.Router
@@ -62,7 +60,7 @@ type Server struct {
 	stats    *stats.Stats
 }
 
-func (s *Server) render(name string, w http.ResponseWriter, ctx interface{}) {
+func (s *server) render(name string, w http.ResponseWriter, ctx interface{}) {
 	buf, err := s.templates.Exec(name, ctx)
 	if err != nil {
 		log.WithError(err).Error("error rending template")
@@ -80,8 +78,7 @@ type templateContext struct {
 	TodoList []*Todo
 }
 
-// IndexHandler ...
-func (s *Server) IndexHandler() httprouter.Handle {
+func (s *server) IndexHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		s.counters.Inc("n_index")
 
@@ -123,8 +120,7 @@ func (s *Server) IndexHandler() httprouter.Handle {
 	}
 }
 
-// AddHandler ...
-func (s *Server) AddHandler() httprouter.Handle {
+func (s *server) AddHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		s.counters.Inc("n_add")
 
@@ -173,8 +169,7 @@ func (s *Server) AddHandler() httprouter.Handle {
 	}
 }
 
-// DoneHandler ...
-func (s *Server) DoneHandler() httprouter.Handle {
+func (s *server) DoneHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		s.counters.Inc("n_done")
 
@@ -235,8 +230,7 @@ func (s *Server) DoneHandler() httprouter.Handle {
 	}
 }
 
-// ClearHandler ...
-func (s *Server) ClearHandler() httprouter.Handle {
+func (s *server) ClearHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		s.counters.Inc("n_clear")
 
@@ -272,8 +266,7 @@ func (s *Server) ClearHandler() httprouter.Handle {
 	}
 }
 
-// StatsHandler ...
-func (s *Server) StatsHandler() httprouter.Handle {
+func (s *server) statsHandler() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		bs, err := json.Marshal(s.stats.Data())
@@ -284,8 +277,7 @@ func (s *Server) StatsHandler() httprouter.Handle {
 	}
 }
 
-// ListenAndServe ...
-func (s *Server) ListenAndServe() {
+func (s *server) listenAndServe() {
 	log.Fatal(
 		http.ListenAndServe(
 			s.bind,
@@ -300,9 +292,9 @@ func (s *Server) ListenAndServe() {
 	)
 }
 
-func (s *Server) initRoutes() {
+func (s *server) initRoutes() {
 	s.router.Handler("GET", "/debug/metrics", exp.ExpHandler(s.counters.r))
-	s.router.GET("/debug/stats", s.StatsHandler())
+	s.router.GET("/debug/stats", s.statsHandler())
 
 	s.router.GET("/", s.IndexHandler())
 	s.router.POST("/add", s.AddHandler())
@@ -314,9 +306,8 @@ func (s *Server) initRoutes() {
 	s.router.POST("/clear/:id", s.ClearHandler())
 }
 
-// NewServer ...
-func NewServer(bind string) *Server {
-	server := &Server{
+func newServer(bind string) *server {
+	server := &server{
 		bind:      bind,
 		router:    httprouter.New(),
 		templates: newTemplates("base"),

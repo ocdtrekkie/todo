@@ -28,5 +28,5 @@ func main() {
 	}
 	defer db.Close()
 
-	NewServer(bind).ListenAndServe()
+	newServer(bind).listenAndServe()
 }
