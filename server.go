@@ -296,6 +296,16 @@ func (s *server) initRoutes() {
 	s.router.Handler("GET", "/debug/metrics", exp.ExpHandler(s.counters.r))
 	s.router.GET("/debug/stats", s.statsHandler())
 
+	s.router.ServeFiles(
+		"/css/*filepath",
+		rice.MustFindBox("static/css").HTTPBox(),
+	)
+
+	s.router.ServeFiles(
+		"/icons/*filepath",
+		rice.MustFindBox("static/icons").HTTPBox(),
+	)
+
 	s.router.GET("/", s.IndexHandler())
 	s.router.POST("/add", s.AddHandler())
 
