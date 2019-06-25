@@ -20,13 +20,6 @@ import (
 	"github.com/unrolled/logger"
 )
 
-const (
-	// maxTitleLength is the maximum valid length of a todo item's title.
-	// Todo items that exceed this length are stripped. This is to prevent
-	// abuse primarily.
-	maxTitleLength = 100
-)
-
 type counters struct {
 	r metrics.Registry
 }
@@ -143,7 +136,7 @@ func (s *server) AddHandler() httprouter.Handle {
 			nextID = binary.BigEndian.Uint64(rawNextID)
 		}
 
-		todo := newTodo(r.FormValue("title")[:maxTitleLength])
+		todo := newTodo(r.FormValue("title"))
 		todo.ID = nextID
 
 		data, err := json.Marshal(&todo)
