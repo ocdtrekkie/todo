@@ -22,7 +22,7 @@ $ docker run -d -p 8000:8000 prologic/todo
 ```
 
 ## Demo
-There is also a public demo instance avilable at: https://todo.mills.io/
+There is also a public demo instance avilable at: [https://todo.mills.io](https://todo.mills.io)
 
 
 ## Installation
