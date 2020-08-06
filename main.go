@@ -13,12 +13,16 @@ var (
 
 func main() {
 	var (
-		dbpath string
-		bind   string
+		dbpath         string
+		bind           string
+		maxItems       int
+		maxTitleLength int
 	)
 
 	flag.StringVar(&dbpath, "dbpath", "todo.db", "Database path")
 	flag.StringVar(&bind, "bind", "0.0.0.0:8000", "[int]:<port> to bind to")
+	flag.IntVar(&maxItems, "maxitems", 100, "maximum number of items allowed in the todo list")
+	flag.IntVar(&maxTitleLength, "maxtitlelength", 100, "maximum valid length of a todo item's title")
 	flag.Parse()
 
 	var err error
@@ -28,5 +32,5 @@ func main() {
 	}
 	defer db.Close()
 
-	newServer(bind).listenAndServe()
+	newServer(bind, maxItems, maxTitleLength).listenAndServe()
 }
