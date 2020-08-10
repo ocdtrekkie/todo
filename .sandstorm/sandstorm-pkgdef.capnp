@@ -19,7 +19,7 @@ const pkgdef :Spk.PackageDefinition = (
 
     appTitle = (defaultText = "μTodo"),
 
-    appVersion = 1,  # Increment this for every release.
+    appVersion = 2,  # Increment this for every release.
 
     appMarketingVersion = (defaultText = "0.0.1"),
     # Human-readable representation of appVersion. Should match the way you
@@ -50,8 +50,8 @@ const pkgdef :Spk.PackageDefinition = (
         # Various icons to represent the app in various contexts.
         appGrid = (png = (dpi1x = embed "../static/icons/mstile-144x144.png")),
         grain = (png = (dpi1x = embed "../static/icons/favicon-32x32.png")),
-        market = (png = (dpi1x = embed "../static/icons/mstile-150x150.png")),
-        marketBig = (png = (dpi1x = embed "../static/icons/mstile-310x310.png")),
+        market = (png = (dpi1x = embed "../static/icons/android-chrome-192x192.png")),
+        marketBig = (png = (dpi1x = embed "../static/icons/android-chrome-512x512.png")),
       ),
 
       website = "https://prologic.github.io/todo",
