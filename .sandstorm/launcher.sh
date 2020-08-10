@@ -1,2 +1,4 @@
 export COLOR_THEME=sandstorm
-exec /opt/app/todo -dbpath /var/todo.db
+export DBPATH=/var/todo.db
+cd /opt/app
+exec ./todo #-dbpath /var/todo.db

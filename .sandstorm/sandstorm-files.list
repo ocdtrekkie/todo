@@ -24,6 +24,7 @@ lib/x86_64-linux-gnu/libtinfo.so.5
 lib/x86_64-linux-gnu/libtinfo.so.5.9
 lib64/ld-linux-x86-64.so.2
 opt/app/.sandstorm/launcher.sh
+opt/app/static/color-themes/sandstorm.css
 opt/app/templates/base.html
 opt/app/templates/index.html
 opt/app/todo

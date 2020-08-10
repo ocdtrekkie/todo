@@ -124,8 +124,8 @@ const pkgdef :Spk.PackageDefinition = (
         # Sizes are given in device-independent pixels, so if you took these
         # screenshots on a Retina-style high DPI screen, divide each dimension by two.
 
-        #(width = 746, height = 795, jpeg = embed "path/to/screenshot-1.jpeg"),
-        (width = 1270, height = 282, png = embed "../screenshot.png"),
+        (width = 1355, height = 650, png = embed "../screenshots/desktop-dracula.png"),
+        (width = 360, height = 740, png = embed "../screenshots/mobile-dracula.png"),
       ],
       #changeLog = (defaultText = embed "path/to/sandstorm-specific/changelog.md"),
       # Documents the history of changes in Github-flavored markdown format (with the same restrictions
